@@ -21,6 +21,7 @@ public class GameManager : MonoBehaviour
     // Fungsi [Range (min, max)] ialah menjaga value agar tetap berada di antara min dan max-nya
     [Range (0f, 1f)]
     public float AutoCollectPercentage = 0.1f;
+    public float SaveDelay = 5f;
     public ResourceConfig[] ResourcesConfigs;
     public Sprite[] ResourcesSprites;
 
@@ -35,6 +36,7 @@ public class GameManager : MonoBehaviour
     private List<ResourceController> _activeResources = new List<ResourceController> ();
     private List<TapText> _tapTextPool = new List<TapText> ();
     private float _collectSecond;
+    private float _saveDelayCounter;
 
     private void Start ()
     {
@@ -44,8 +46,10 @@ public class GameManager : MonoBehaviour
 
     private void Update ()
     {
-        // Fungsi untuk selalu mengeksekusi CollectPerSecond setiap detik
-        _collectSecond += Time.unscaledDeltaTime;
+        float deltaTime = Time.unscaledDeltaTime;
+        _saveDelayCounter -= deltaTime;
+
+        _collectSecond += deltaTime;
         if (_collectSecond >= 1f)
         {
             CollectPerSecond ();
@@ -122,7 +126,6 @@ public class GameManager : MonoBehaviour
         }
 
         output *= AutoCollectPercentage;
-        // Fungsi ToString("F1") ialah membulatkan angka menjadi desimal yang memiliki 1 angka di belakang koma
         AutoCollectInfo.text = $"Auto Collect: { output.ToString ("F1") } / second";
 
         AddGold (output);
@@ -132,7 +135,12 @@ public class GameManager : MonoBehaviour
     {
         UserDataManager.Progress.Gold += value;
         GoldInfo.text = $"Gold: { UserDataManager.Progress.Gold.ToString ("0") }";
-        UserDataManager.Save();
+        UserDataManager.Save(_saveDelayCounter < 0f);
+
+        if (_saveDelayCounter < 0f)
+        {
+            _saveDelayCounter = SaveDelay;
+        }
     }
 
     public void CollectByTap (Vector3 tapPosition, Transform parent)
